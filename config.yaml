@@ -1,0 +1,100 @@
+strategy:
+  ma_window: 120
+  slope_window: 20
+  slope_threshold: 0.0003
+  long_ma_window: 250
+  long_slope_window: 40
+  box_window: 60
+  lower_quantile: 0.10
+  upper_quantile: 0.90
+  atr_window: 20
+  atr_box_multiplier: 0.50
+  breakout_atr_multiplier: 0.50
+  confirm_days: 2
+  max_daily_position_change: 0.20
+  breakout_position_floor: 0.70
+  breakdown_position_cap: 0.30
+  cooldown_days: 3
+
+portfolio:
+  max_total_position: 0.80
+  max_growth_position: 0.35
+
+output:
+  directory: '/Volumes/DRCC_DATA/11SPIDER_DATA/05-spiders/quant_market_china_daily'
+
+# 中证 A500，模块 2 用它作为行业相对强弱基准。
+benchmark:
+  a500_ts_code: "000510.SH"
+
+indices:
+  - name: 沪深300
+    symbol: sh000300
+    code: "000300"
+    exchange: SH
+    budget_weight: 0.30
+    core_position: 0.40
+    category: core
+    etf_hint: 沪深300ETF
+  - name: 中证A500
+    symbol: sh000510
+    code: "000510"
+    exchange: CSI
+    budget_weight: 0.30
+    core_position: 0.40
+    category: core
+    etf_hint: 中证A500ETF
+  - name: 创业板指
+    symbol: sz399006
+    code: "399006"
+    exchange: SZ
+    budget_weight: 0.20
+    core_position: 0.10
+    category: growth
+    etf_hint: 创业板ETF
+  - name: 科创50
+    symbol: sh000688
+    code: "000688"
+    exchange: SH
+    budget_weight: 0.20
+    core_position: 0.10
+    category: growth
+    etf_hint: 科创50ETF
+  - name: 恒生科技指数
+    symbol: HSTECH
+    code: HSTECH
+    exchange: HK
+    budget_weight: 0.00
+    core_position: 0.00
+    category: overseas
+    etf_hint: 恒生科技ETF（按实际持仓选择）
+    source: hk_index
+    source_symbol: HSTECH
+  - name: 芯片ETF
+    symbol: CHIP
+    code: "512760"
+    exchange: SH
+    budget_weight: 0.00
+    core_position: 0.00
+    category: sector
+    etf_hint: 芯片ETF（512760）
+    source: etf
+    source_symbol: "512760"
+
+  # CPO / 光通信 ETF 代码待确认，默认禁用，避免错误替代实际持仓。
+  - name: CPO／光通信ETF
+    symbol: CPO
+    code: 待确认
+    exchange: CN
+    budget_weight: 0.00
+    core_position: 0.00
+    category: sector
+    etf_hint: 待确认实际持仓ETF代码
+    source: etf
+    enabled: false
+
+  # 日经 225、韩国 KOSPI 等海外数据源后续按需接入，暂不阻断国内模块。
+
+# Tushare token 只应保存在本地配置，不要提交到公开仓库。
+keys:
+  tushare: "a78999103f313036db043fcfd93100db65d46231db9500f8badfe81d"
