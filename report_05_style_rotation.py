@@ -51,6 +51,8 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / "data"
+PDF_DIR = DATA_DIR / "pdf"
 
 # 代码逐一固定，不从相似名称推测或替换数据。
 INDEX_CODES = {
@@ -417,7 +419,7 @@ def _json_ready(result: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def save_summary(results: List[Dict[str, Any]], asof: pd.Timestamp, root: Path, notes: List[str]) -> None:
-    p = root / "output/data"
+    p = root
     p.mkdir(parents=True, exist_ok=True)
     payload = {
         "module": "05_style_rotation", "trade_date": asof.strftime("%Y-%m-%d"),
@@ -434,8 +436,9 @@ def save_summary(results: List[Dict[str, Any]], asof: pd.Timestamp, root: Path, 
 def _token(root: Path) -> str:
     env = os.environ.get("TUSHARE_TOKEN", "").strip()
     if env: return env
-    f = root / "config.yaml"
-    if f.exists():
+    candidates = (root / "config.yaml", ROOT / "config.yaml", root.parent / "config.yaml")
+    f = next((candidate for candidate in candidates if candidate.exists()), None)
+    if f is not None:
         try: import yaml
         except ImportError as exc: raise RuntimeError("请在py39环境安装PyYAML：python -m pip install pyyaml") from exc
         cfg = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
@@ -534,7 +537,7 @@ def fetch_data(root: Path, asof: pd.Timestamp, args, pro=None) -> List[str]:
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--directory", default=str(ROOT), help="同目录CSV/config.yaml所在目录")
+    p.add_argument("--directory", default=str(DATA_DIR), help="CSV与数据输出目录，默认项目 data 目录")
     p.add_argument("--date", help="目标收盘交易日YYYYMMDD；默认使用market_breadth.csv最新日期")
     p.add_argument("--fetch", action="store_true", help="先用config.yaml增量补齐指数与申万行业历史日线")
     p.add_argument("--start-date", help="首次回溯起点YYYYMMDD")
@@ -542,7 +545,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--overlap-days", type=int, default=14, help="每次增量回溯自然日，默认14")
     p.add_argument("--full-refresh", action="store_true", help="忽略缓存断点，重抓起点以后的历史")
     p.add_argument("--pause", type=float, default=.25, help="接口调用之间暂停秒数")
-    p.add_argument("--output", help="PDF输出路径；默认output/pdf/report_05_style_rotation.pdf")
+    p.add_argument("--output", help="PDF输出路径；默认 data/pdf/report_05_style_rotation.pdf")
     p.add_argument("--demo-watermark", action="store_true", help="只在离线模拟数据验证时添加水印")
     return p
 
@@ -564,7 +567,7 @@ def run(args, pro=None) -> int:
         notes.append("全部配对没有足够、且截至目标日同步的历史数据；PDF将显示真实缺失状态。")
     if errs:
         notes.append("本轮有%d个下载窗口失败；已缓存历史保留，缺口没有填造。"%len(errs))
-    out = Path(args.output).expanduser() if args.output else root/"output/pdf/report_05_style_rotation.pdf"
+    out = Path(args.output).expanduser() if args.output else root/"pdf/report_05_style_rotation.pdf"
     n = build_pdf(results,asof,out,notes,demo=args.demo_watermark)
     save_summary(results,asof,root,notes)
     print("模块05 %s：%d/%d组合有历史信号；PDF %d页：%s"%(asof.strftime("%Y-%m-%d"),valid,len(results),n,out))

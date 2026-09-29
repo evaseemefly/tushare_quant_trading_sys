@@ -26,6 +26,7 @@ import yaml
 
 
 DEFAULT_CONFIG = Path(__file__).with_name("config.yaml")
+DATA_DIR = DEFAULT_CONFIG.parent / "data"
 PAGE_SIZE = 5_000
 DATE_CHUNK_DAYS = 15  # 避免单个日期窗口的 offset 接近 Tushare 的 100000 上限。
 
@@ -213,11 +214,13 @@ def main() -> None:
     parser.add_argument("--start-date", help="开始日期 YYYYMMDD")
     parser.add_argument("--end-date", help="结束日期 YYYYMMDD")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
-    parser.add_argument("--output", default="market_breadth.csv")
+    parser.add_argument("--output", default=str(DATA_DIR / "market_breadth.csv"))
     args = parser.parse_args()
     result = run(args.start_date, args.end_date, args.config)
-    result.to_csv(args.output, index=False, encoding="utf-8-sig")
-    print(f"已输出 {len(result)} 个交易日：{args.output}")
+    output = Path(args.output).expanduser()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    result.to_csv(output, index=False, encoding="utf-8-sig")
+    print(f"已输出 {len(result)} 个交易日：{output}")
 
 
 if __name__ == "__main__":

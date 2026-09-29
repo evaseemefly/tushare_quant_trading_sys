@@ -24,6 +24,7 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / 'data'
 SPECS = {
     'etf_daily.csv': ('ts_code','trade_date'),
     'etf_share.csv': ('ts_code','trade_date'),
@@ -90,7 +91,8 @@ def client_from_env(root: Path = ROOT, config: str = 'config.yaml'):
     if not token:
         config_path = Path(config).expanduser()
         if not config_path.is_absolute():
-            config_path = root / config_path
+            candidates = (root / config_path, ROOT / config_path, root.parent / config_path)
+            config_path = next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
         if config_path.is_file():
             try:
                 import yaml
@@ -293,13 +295,13 @@ def run(args, pro=None) -> int:
         if available.empty:
             print(f'ERROR: {end} 没有任何ETF日线，拒绝生成过期报告。')
             return 3
-        script = root/'report_03_etf_flow.py'
+        script = ROOT/'report_03_etf_flow.py'
         if not script.exists(): raise FileNotFoundError(f'请把 report_03_etf_flow.py 放到 {root}')
         command=[sys.executable,str(script),'--input',str(root/'etf_daily.csv'),'--shares',str(root/'etf_share.csv'),
                  '--nav',str(root/'etf_nav.csv'),'--index',str(root/'index_daily.csv'),
                  '--map',str(root/'etf_watchlist.csv'),'--date',end,
-                 '--output',str(root/'output/pdf/report_03_etf_flow.pdf'),
-                 '--summary-json',str(root/'output/data/report_03_etf_flow.json')]
+                 '--output',str(root/'pdf/report_03_etf_flow.pdf'),
+                 '--summary-json',str(root/'report_03_etf_flow.json')]
         print('生成PDF:', ' '.join(command))
         subprocess.run(command,check=True,cwd=root)
     return 0
@@ -307,8 +309,8 @@ def run(args, pro=None) -> int:
 
 def make_parser():
     parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--directory',default=str(ROOT),help='所有CSV及脚本所在目录，默认本文件目录')
-    parser.add_argument('--config',default='config.yaml',help='Token配置文件，默认读取--directory下的config.yaml')
+    parser.add_argument('--directory',default=str(DATA_DIR),help='所有CSV及数据输出目录，默认项目 data 目录')
+    parser.add_argument('--config',default=str(ROOT/'config.yaml'),help='Token配置文件，默认项目根目录 config.yaml')
     parser.add_argument('--date',help='预期收盘交易日YYYYMMDD；默认market_breadth.csv的最新日期，若不存在则本机日期')
     parser.add_argument('--start-date',help='可选首次追溯起点YYYYMMDD，如20250101')
     parser.add_argument('--bootstrap-days',type=int,default=420,help='首次下载回看自然日，默认420天')

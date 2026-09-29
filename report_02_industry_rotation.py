@@ -7,9 +7,9 @@
 示例：
     python report_02_industry_rotation.py
     python report_02_industry_rotation.py --date 20260928 \
-        --input industry_rotation.csv \
-        --output output/pdf/report_02_industry_rotation.pdf \
-        --summary-json output/data/report_02_industry_rotation_summary.json
+        --input data/industry_rotation.csv \
+        --output data/pdf/report_02_industry_rotation.pdf \
+        --summary-json data/report_02_industry_rotation_summary.json
 
 报告两页：
     1. 31 个申万 2021 一级行业流通市值加权面积热力图、短期强弱与量能；
@@ -84,6 +84,9 @@ FONT_PATHS = (
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
 )
+ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / "data"
+PDF_DIR = DATA_DIR / "pdf"
 
 
 def configure_font() -> None:
@@ -505,10 +508,10 @@ def build_summary(day: pd.DataFrame, l1: pd.DataFrame, l2: pd.DataFrame, l3: pd.
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--input", default=str(Path(__file__).resolve().with_name("industry_rotation.csv")), help="上游行业 CSV，默认脚本同目录 industry_rotation.csv")
-    parser.add_argument("--output", default="output/pdf/report_02_industry_rotation.pdf", help="生成的两页 PDF")
+    parser.add_argument("--input", default=str(DATA_DIR / "industry_rotation.csv"), help="上游行业 CSV，默认 data/industry_rotation.csv")
+    parser.add_argument("--output", default=str(PDF_DIR / "report_02_industry_rotation.pdf"), help="生成的两页 PDF")
     parser.add_argument("--date", help="报告交易日 YYYYMMDD；默认源 CSV 中最新日期")
-    parser.add_argument("--summary-json", help="可选：输出供总控程序使用的 JSON 摘要")
+    parser.add_argument("--summary-json", default=str(DATA_DIR / "report_02_industry_rotation_summary.json"), help="输出供总控程序使用的 JSON 摘要")
     args = parser.parse_args()
 
     frame = load_data(Path(args.input))

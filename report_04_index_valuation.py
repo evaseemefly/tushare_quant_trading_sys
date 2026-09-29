@@ -53,6 +53,8 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / "data"
+PDF_DIR = DATA_DIR / "pdf"
 # symbol 作为稳定ID；TS后缀由index_basic查验后确定（绝不从名称模糊选同名指数）
 INDEXES = [
     ("000300", "沪深300", "000300.SH"),
@@ -445,8 +447,9 @@ def read_config_token(root:Path) -> Optional[str]:
     env=os.environ.get("TUSHARE_TOKEN","").strip()
     if env:
         return env
-    p=root/"config.yaml"
-    if not p.exists():return None
+    candidates = (root / "config.yaml", ROOT / "config.yaml", root.parent / "config.yaml")
+    p = next((candidate for candidate in candidates if candidate.exists()), None)
+    if p is None:return None
     try:
         import yaml
     except ImportError as exc:
@@ -623,7 +626,7 @@ def fetch_data(root:Path, target:str, bootstrap:str, overlap:int, pro=None, cove
 
 def cli():
     ap=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--directory",default=str(ROOT),help="CSV/config.yaml目录，默认当前脚本所在目录")
+    ap.add_argument("--directory",default=str(DATA_DIR),help="CSV/数据输出目录，默认项目 data 目录")
     ap.add_argument("--date",help="报告预期交易日YYYYMMDD，默认market_breadth.csv最新日期")
     ap.add_argument("--fetch",action="store_true",help="先根据同目录config.yaml从Tushare增量下载指数日线与可用指数估值")
     ap.add_argument("--start-date",help="首次回溯起点，默认报告日前5年+约45天")
@@ -655,8 +658,8 @@ def main():
     items=assess(prices,vals,cov,target_dt)
     if all(x["price"]["value"] is None for x in items):
         raise ValueError("指定日期之前五大指数均无真实价格记录，拒绝生成空报告")
-    out=Path(args.output) if args.output else root/"output/pdf/report_04_index_valuation.pdf"
-    js=Path(args.summary_json) if args.summary_json else root/"output/data/report_04_index_valuation.json"
+    out=Path(args.output) if args.output else root/"pdf/report_04_index_valuation.pdf"
+    js=Path(args.summary_json) if args.summary_json else root/"report_04_index_valuation.json"
     make_report(items,prices,vals,target_dt,out)
     js.parent.mkdir(parents=True,exist_ok=True)
     js.write_text(json.dumps({"trade_date":target_dt.strftime("%Y-%m-%d"),"indices":items,

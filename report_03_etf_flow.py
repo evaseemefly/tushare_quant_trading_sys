@@ -56,6 +56,8 @@ from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
 
 BASE = Path(__file__).resolve().parent
+DATA_DIR = BASE / "data"
+PDF_DIR = DATA_DIR / "pdf"
 TEXT, MUTED, LINE, BG = "#253548", "#718097", "#DEE6EE", "#F5F7FA"
 RED, GREEN, BLUE, ORANGE, PURPLE = "#C84B56", "#238A66", "#4879AC", "#DB8B3C", "#8A65AC"
 FONT_PATHS = (
@@ -563,16 +565,16 @@ def build_summary(current: pd.DataFrame, date: pd.Timestamp, label: str) -> dict
 
 def main() -> None:
     parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--input",default=str(BASE/"etf_daily.csv"),help="必需：ETF日线CSV")
-    parser.add_argument("--shares",default=str(BASE/"etf_share.csv"),help="可选：ETF份额CSV")
-    parser.add_argument("--nav",default=str(BASE/"etf_nav.csv"),help="可选：ETF单位净值CSV")
-    parser.add_argument("--index",default=str(BASE/"index_daily.csv"),help="可选：指数日线CSV")
-    parser.add_argument("--map",default=str(BASE/"etf_watchlist.csv"),help="可选：手工ETF-指数映射CSV")
+    parser.add_argument("--input",default=str(DATA_DIR/"etf_daily.csv"),help="必需：ETF日线CSV")
+    parser.add_argument("--shares",default=str(DATA_DIR/"etf_share.csv"),help="可选：ETF份额CSV")
+    parser.add_argument("--nav",default=str(DATA_DIR/"etf_nav.csv"),help="可选：ETF单位净值CSV")
+    parser.add_argument("--index",default=str(DATA_DIR/"index_daily.csv"),help="可选：指数日线CSV")
+    parser.add_argument("--map",default=str(DATA_DIR/"etf_watchlist.csv"),help="可选：手工ETF-指数映射CSV")
     parser.add_argument("--amount-unit",choices=("thousand","ten_thousand","yuan"),default="thousand",
                         help="仅用于原始amount字段：默认Tushare fund_daily千元")
     parser.add_argument("--date",help="报告交易日YYYYMMDD；默认最新ETF交易日")
-    parser.add_argument("--output",default="output/pdf/report_03_etf_flow.pdf")
-    parser.add_argument("--summary-json",help="可选：输出可由总控脚本使用的JSON摘要")
+    parser.add_argument("--output",default=str(PDF_DIR/"report_03_etf_flow.pdf"))
+    parser.add_argument("--summary-json",default=str(DATA_DIR/"report_03_etf_flow.json"),help="输出可由总控脚本使用的JSON摘要")
     parser.add_argument("--top",type=int,default=8,help="首页重点ETF数量，上限8")
     parser.add_argument("--label",default="",help="可选大字水印，例如：模拟数据·仅测试排版")
     args=parser.parse_args()

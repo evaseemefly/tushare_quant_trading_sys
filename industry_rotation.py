@@ -32,6 +32,7 @@ import pandas as pd
 import yaml
 
 ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / "data"
 DEFAULT_CONFIG = ROOT / "config.yaml"
 DEFAULT_BENCHMARK = "000510.SH"  # 中证A500，可从 benchmark.a500_ts_code 覆盖
 SW_WINDOW_DAYS = 5                  # 每窗至多5个自然日，避免 >4000 行截断
@@ -282,7 +283,7 @@ def _outpath(root: Path, value: str | Path) -> Path:
 
 
 def run(start_date: str | None = None, end_date: str | None = None,
-        config_path: str | Path = DEFAULT_CONFIG, *, root: Path = ROOT,
+        config_path: str | Path = DEFAULT_CONFIG, *, root: Path = DATA_DIR,
         output: str | Path = "industry_rotation.csv",
         history_output: str | Path = "industry_rotation_history.csv",
         sw_cache: str | Path = "sw_daily_history.csv",
@@ -367,7 +368,7 @@ def main() -> None:
     parser.add_argument("--start-date", help="YYYYMMDD；默认截止日前420自然日")
     parser.add_argument("--end-date", help="YYYYMMDD；默认本机日期，建议盘后显式传入")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
-    parser.add_argument("--directory", default=str(ROOT), help="CSV输出目录，默认脚本同目录")
+    parser.add_argument("--directory", default=str(DATA_DIR), help="CSV输出目录，默认项目 data 目录")
     parser.add_argument("--output", default="industry_rotation.csv")
     parser.add_argument("--history-output", default="industry_rotation_history.csv")
     parser.add_argument("--sw-cache", default="sw_daily_history.csv")

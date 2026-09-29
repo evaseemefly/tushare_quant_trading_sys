@@ -6,8 +6,8 @@
 示例：
 
     python report_01_market_breadth.py \
-        --input market_breadth.csv \
-        --output output/pdf/report_01_market_breadth.pdf \
+        --input data/market_breadth.csv \
+        --output data/pdf/report_01_market_breadth.pdf \
         --date 20260924
 """
 
@@ -64,6 +64,9 @@ FONT_CANDIDATES = (
     "/System/Library/Fonts/Hiragino Sans GB.ttc",
     "/Library/Fonts/Arial Unicode.ttf",
 )
+ROOT = Path(__file__).resolve().parent
+DATA_DIR = ROOT / "data"
+PDF_DIR = DATA_DIR / "pdf"
 
 
 def configure_font() -> None:
@@ -444,8 +447,8 @@ def build_report(frame: pd.DataFrame, asof: pd.Timestamp, lookback: int | None) 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", default="market_breadth.csv", help="模块 1 输出的 CSV")
-    parser.add_argument("--output", default="output/pdf/report_01_market_breadth.pdf")
+    parser.add_argument("--input", default=str(DATA_DIR / "market_breadth.csv"), help="模块 1 输出的 CSV")
+    parser.add_argument("--output", default=str(PDF_DIR / "report_01_market_breadth.pdf"))
     parser.add_argument("--date", help="报告交易日 YYYYMMDD，默认使用 CSV 最新交易日")
     parser.add_argument("--lookback", type=int, default=120, help="图表回看交易日数量，默认 120")
     args = parser.parse_args()
