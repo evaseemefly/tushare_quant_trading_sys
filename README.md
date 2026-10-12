@@ -6,7 +6,7 @@
 ## 当前版本：5 个数据与报告模块已实现
 
 | 模块 | 数据脚本 | 报告脚本 | 状态 | 主要功能 |
-| --- | --- | --- | --- |
+| --- | --- | --- | --- | --- |
 | 1. 市场广度与成交额 | `market_breadth.py` | `report_01_market_breadth.py` | 已实现 | 全市场成交额、量能比率、涨跌家数、20 日新高/新低、MA20/60/120 广度 |
 | 2. 申万行业轮动 | `industry_rotation.py` | `report_02_industry_rotation.py` | 已实现 | 申万行业收益、相对 A500 超额收益、成交额比率、动能和四象限 |
 | 3. ETF 资金与交易质量 | `fetch_03_etf_data.py` | `report_03_etf_flow.py` | 已实现 | ETF 成交额、份额变化、折溢价和指数跟踪偏离 |
@@ -48,7 +48,7 @@ v1 的定位是“研究数据层”，输出 CSV 供后续报告和原有趋势
 ## 安装依赖
 
 ```bash
-pip install tushare pandas pyyaml
+pip install tushare pandas pyyaml pypdf
 ```
 
 建议使用 Python 3.9 或更高版本。
@@ -74,7 +74,7 @@ keys:
 python run.py
 ```
 
-统一入口会依次更新市场广度、申万行业、ETF、指数估值和风格轮动数据，并生成五份 PDF。所有报告使用同一个实际交易日，文件保存在 `data/pdf/`；各模块的 CSV 缓存和 JSON 摘要保存在 `data/`。配置默认读取项目目录中的 `config.yaml`。
+统一入口会依次更新市场广度、申万行业、ETF、指数估值和风格轮动数据，生成 5 份模块 PDF 后按顺序合并为一份完整日报。总报告使用实际交易日命名，例如 `data/pdf/quant_monitor_report_20261010.pdf`；单模块 PDF 仍保存在 `data/pdf/`，每次运行会更新为最新版本。各模块的 CSV 缓存和 JSON 摘要保存在 `data/`。配置默认读取项目目录中的 `config.yaml`。
 
 需要重跑某个交易日时，可以显式指定日期：
 

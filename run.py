@@ -15,7 +15,7 @@ import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence
 
 
 ROOT = Path(__file__).resolve().parent
@@ -64,6 +64,54 @@ def _latest_breadth_date(path: Path) -> str:
     return dates.max().strftime("%Y%m%d")
 
 
+def _load_pdf_tools() -> tuple[Any, Any]:
+    """加载 PDF 拼接库，尽早提示缺失依赖，避免抓取完数据后才失败。"""
+    try:
+        from pypdf import PdfReader, PdfWriter
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader, PdfWriter
+        except ImportError as exc:
+            raise RuntimeError("合并日报需要 pypdf，请先运行：python -m pip install pypdf") from exc
+    return PdfReader, PdfWriter
+
+
+def _merge_reports(report_date: str, pdf_paths: Sequence[Path], PdfReader: Any, PdfWriter: Any) -> Path:
+    """按列表顺序拼接 PDF，并以交易日命名输出；写入成功后再替换正式文件。"""
+    output = PDF_DIR / f"quant_monitor_report_{report_date}.pdf"
+    temp_output = output.with_name(f"{output.stem}.tmp.pdf")
+    writer = PdfWriter()
+    streams = []
+    try:
+        for pdf_path in pdf_paths:
+            if not pdf_path.is_file():
+                raise FileNotFoundError(f"缺少待合并的报告：{pdf_path}")
+            stream = pdf_path.open("rb")
+            streams.append(stream)
+            reader = PdfReader(stream)
+            if reader.is_encrypted:
+                raise RuntimeError(f"报告已加密，无法合并：{pdf_path}")
+            if not reader.pages:
+                raise RuntimeError(f"报告没有页面，无法合并：{pdf_path}")
+            for page in reader.pages:
+                writer.add_page(page)
+
+        writer.add_metadata({
+            "/Title": f"量化监测报告 {report_date}",
+            "/Subject": "市场广度、行业轮动、ETF、指数估值与市场风格",
+        })
+        with temp_output.open("wb") as output_stream:
+            writer.write(output_stream)
+        temp_output.replace(output)
+    except Exception:
+        temp_output.unlink(missing_ok=True)
+        raise
+    finally:
+        for stream in streams:
+            stream.close()
+    return output
+
+
 def run_daily(report_date: str | None = None) -> str:
     """按依赖顺序更新数据，生成五份报告，返回实际报告交易日。"""
     config_path = CONFIG_PATH
@@ -72,6 +120,14 @@ def run_daily(report_date: str | None = None) -> str:
             datetime.strptime(report_date, "%Y%m%d")
         except ValueError as exc:
             raise ValueError("--date 必须是 YYYYMMDD 格式") from exc
+    pdf_reader, pdf_writer = _load_pdf_tools()
+    report_pdfs = [
+        PDF_DIR / "report_01_market_breadth.pdf",
+        PDF_DIR / "report_02_industry_rotation.pdf",
+        PDF_DIR / "report_03_etf_flow.pdf",
+        PDF_DIR / "report_04_index_valuation.pdf",
+        PDF_DIR / "report_05_style_rotation.pdf",
+    ]
 
     # 1. 市场广度：获取全市场日线并保存报告数据源。
     print("\n[1/5] 更新市场广度数据")
@@ -95,13 +151,13 @@ def run_daily(report_date: str | None = None) -> str:
     print("\n[3/5] 生成市场广度与行业轮动报告")
     _run_cli(
         report_01_market_breadth.main,
-        ["--input", str(breadth_path), "--output", str(PDF_DIR / "report_01_market_breadth.pdf"), "--date", asof],
+        ["--input", str(breadth_path), "--output", str(report_pdfs[0]), "--date", asof],
         "report_01_market_breadth.py",
     )
     _run_cli(
         report_02_industry_rotation.main,
         ["--input", str(DATA_DIR / "industry_rotation.csv"),
-         "--output", str(PDF_DIR / "report_02_industry_rotation.pdf"), "--date", asof,
+         "--output", str(report_pdfs[1]), "--date", asof,
          "--summary-json", str(DATA_DIR / "report_02_industry_rotation_summary.json")],
         "report_02_industry_rotation.py",
     )
@@ -121,7 +177,7 @@ def run_daily(report_date: str | None = None) -> str:
          "--nav", str(DATA_DIR / "etf_nav.csv"),
          "--index", str(DATA_DIR / "index_daily.csv"),
          "--map", str(DATA_DIR / "etf_watchlist.csv"), "--date", asof,
-         "--output", str(PDF_DIR / "report_03_etf_flow.pdf"),
+         "--output", str(report_pdfs[2]),
          "--summary-json", str(DATA_DIR / "report_03_etf_flow.json")],
         "report_03_etf_flow.py",
     )
@@ -130,17 +186,20 @@ def run_daily(report_date: str | None = None) -> str:
     print("\n[5/5] 更新指数估值、风格数据并生成报告")
     _run_cli(
         report_04_index_valuation.main,
-        ["--directory", str(DATA_DIR), "--fetch", "--date", asof],
+        ["--directory", str(DATA_DIR), "--fetch", "--date", asof,
+         "--output", str(report_pdfs[3])],
         "report_04_index_valuation.py",
     )
     style_args = report_05_style_rotation.parser().parse_args([
         "--directory", str(DATA_DIR), "--fetch", "--date", asof,
+        "--output", str(report_pdfs[4]),
     ])
     status = report_05_style_rotation.run(style_args)
     if status != 0:
         raise RuntimeError(f"风格轮动报告生成失败，退出码为 {status}")
 
-    print(f"\n全部完成：交易日 {asof}；PDF 报告目录：{PDF_DIR}")
+    combined_pdf = _merge_reports(asof, report_pdfs, pdf_reader, pdf_writer)
+    print(f"\n全部完成：交易日 {asof}；完整报告：{combined_pdf}")
     return asof
 
 
